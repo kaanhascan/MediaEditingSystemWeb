@@ -25,12 +25,12 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final FfmpegService ffmpegService;
 
 
     private final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/raw/";
 
     public UploadResponse uploadVideo(MultipartFile file, String title) throws IOException {
-
 
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
@@ -61,6 +61,8 @@ public class VideoService {
                 .build();
 
         Video savedVideo = videoRepository.save(video);
+
+        ffmpegService.processVideoTrimming(savedVideo.getId(), "00:00:05", "10");
 
 
         return new UploadResponse(
