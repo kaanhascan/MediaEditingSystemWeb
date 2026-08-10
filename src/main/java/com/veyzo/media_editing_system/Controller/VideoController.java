@@ -2,6 +2,7 @@ package com.veyzo.media_editing_system.Controller;
 
 import com.veyzo.media_editing_system.Model.Video;
 import com.veyzo.media_editing_system.Model.VideoStatus;
+import com.veyzo.media_editing_system.Repository.UserRepository;
 import com.veyzo.media_editing_system.Repository.VideoRepository;
 import com.veyzo.media_editing_system.Service.VideoService;
 import com.veyzo.media_editing_system.dto.response.VideoListResponse;
@@ -27,6 +28,7 @@ public class VideoController {
 
     private final VideoService videoService;
     private final VideoRepository videoRepository;
+    private final UserRepository userRepository;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity uploadVideo(
@@ -71,5 +73,16 @@ public class VideoController {
     @GetMapping("/my-videos")
     public ResponseEntity<List<VideoListResponse>> getMyVideos() {
         return ResponseEntity.ok(videoService.getUserVideos());
+    }
+
+    @DeleteMapping("/{videoId}")
+    public ResponseEntity<String> deletevideo(@PathVariable UUID videoId) {
+        try{
+            videoService.deleteVideo(videoId);
+            return ResponseEntity.ok("Video başarıyla silindi");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

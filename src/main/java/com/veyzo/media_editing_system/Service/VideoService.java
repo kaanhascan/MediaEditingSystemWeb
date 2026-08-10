@@ -11,6 +11,7 @@ import com.veyzo.media_editing_system.dto.response.VideoStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -100,5 +101,37 @@ public class VideoService {
                         video.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
+    }
+    @Transactional
+    public void deleteVideo(UUID videoId) {
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video Bulunamadı"));
+
+        String currentUserIdStr = currentUser.getId().toString();
+        String videoOwnerIdStr = video.getUser().getId().toString();
+
+        System.out.println("Giriş Yapan (String): " + currentUserIdStr);
+        System.out.println("Videonun Sahibi (String): " + videoOwnerIdStr);
+
+        if(!videoOwnerIdStr.equals(currentUserIdStr)) {
+            throw new RuntimeException("Bu video başka bir kullancıya ait!");
+        }
+
+        try{
+            if(video.getOriginalFilePath() != null){
+                Files.deleteIfExists(Paths.get(video.getOriginalFilePath()));
+            }
+            if(video.getProcessedFilePath() != null){
+                Files.deleteIfExists(Paths.get(video.getProcessedFilePath()));
+            }
+        }
+        catch(Exception e){
+            System.err.println("Dosya fiziksel olarak silinirken bir hata ile karşılaşıldı." + e.getMessage());
+        }
+        videoRepository.delete(video);
     }
 }
