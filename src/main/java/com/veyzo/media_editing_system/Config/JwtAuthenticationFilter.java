@@ -1,6 +1,6 @@
-package com.vidops.media_editing_system.Config;
+package com.veyzo.media_editing_system.Config;
 
-import com.vidops.media_editing_system.Service.JWTService;
+import com.veyzo.media_editing_system.Service.JWTService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

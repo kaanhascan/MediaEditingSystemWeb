@@ -1,4 +1,4 @@
-package com.vidops.media_editing_system;
+package com.veyzo.media_editing_system;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

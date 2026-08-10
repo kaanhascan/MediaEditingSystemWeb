@@ -1,6 +1,6 @@
-package com.vidops.media_editing_system.Repository;
+package com.veyzo.media_editing_system.Repository;
 
-import com.vidops.media_editing_system.Model.User;
+import com.veyzo.media_editing_system.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

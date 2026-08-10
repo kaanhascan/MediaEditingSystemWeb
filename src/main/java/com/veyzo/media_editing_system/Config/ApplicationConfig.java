@@ -1,6 +1,6 @@
-package com.vidops.media_editing_system.Config;
+package com.veyzo.media_editing_system.Config;
 
-import com.vidops.media_editing_system.Repository.UserRepository;
+import com.veyzo.media_editing_system.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

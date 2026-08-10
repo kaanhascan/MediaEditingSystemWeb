@@ -1,4 +1,4 @@
-package com.vidops.media_editing_system.Config;
+package com.veyzo.media_editing_system.Config;
 
 
 import lombok.RequiredArgsConstructor;

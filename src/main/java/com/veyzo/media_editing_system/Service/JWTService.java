@@ -1,4 +1,4 @@
-package com.vidops.media_editing_system.Service;
+package com.veyzo.media_editing_system.Service;
 
 
 import io.jsonwebtoken.Claims;

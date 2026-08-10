@@ -1,10 +1,10 @@
-package com.vidops.media_editing_system.Service;
+package com.veyzo.media_editing_system.Service;
 
-import com.vidops.media_editing_system.Model.User;
-import com.vidops.media_editing_system.Repository.UserRepository;
-import com.vidops.media_editing_system.dto.request.LoginRequest;
-import com.vidops.media_editing_system.dto.request.RegisterRequest;
-import com.vidops.media_editing_system.dto.response.AuthResponse;
+import com.veyzo.media_editing_system.Model.User;
+import com.veyzo.media_editing_system.Repository.UserRepository;
+import com.veyzo.media_editing_system.dto.request.LoginRequest;
+import com.veyzo.media_editing_system.dto.request.RegisterRequest;
+import com.veyzo.media_editing_system.dto.response.AuthResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

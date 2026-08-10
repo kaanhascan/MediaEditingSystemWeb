@@ -1,4 +1,4 @@
-package com.vidops.media_editing_system.Model;
+package com.veyzo.media_editing_system.Model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
