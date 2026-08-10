@@ -30,7 +30,12 @@ public class UserController {
 
     @GetMapping("/test")
     public ResponseEntity<String> success(){
-        return ResponseEntity.ok("Success");
+        try{
+            return ResponseEntity.ok("Success");
+        }
+        catch(Exception e){
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
 
