@@ -6,6 +6,8 @@ import com.veyzo.media_editing_system.Model.VideoStatus;
 import com.veyzo.media_editing_system.Repository.UserRepository;
 import com.veyzo.media_editing_system.Repository.VideoRepository;
 import com.veyzo.media_editing_system.dto.response.UploadResponse;
+import com.veyzo.media_editing_system.dto.response.VideoListResponse;
+import com.veyzo.media_editing_system.dto.response.VideoStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,7 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +34,7 @@ public class VideoService {
 
     private final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/raw/";
 
-    public UploadResponse uploadVideo(MultipartFile file, String title) throws IOException {
+    public UploadResponse uploadVideo(MultipartFile file, String title,String startTime,String duration) throws IOException {
 
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
@@ -62,7 +66,7 @@ public class VideoService {
 
         Video savedVideo = videoRepository.save(video);
 
-        ffmpegService.processVideoTrimming(savedVideo.getId(), "00:00:05", "10");
+        ffmpegService.processVideoTrimming(savedVideo.getId(), startTime, duration);
 
 
         return new UploadResponse(
@@ -71,5 +75,30 @@ public class VideoService {
                 savedVideo.getStatus(),
                 "Video başarıyla yüklendi ve işleme sırasına alındı."
         );
+    }
+
+    public VideoStatusResponse getVideoStatus(UUID videoId) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video bulunamadı"));
+
+        return new VideoStatusResponse(video.getStatus(), video.getProcessedFileName());
+    }
+
+    public List<VideoListResponse> getUserVideos() {
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+
+        return videoRepository.findByUser_IdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(video -> new VideoListResponse(
+                        video.getId(),
+                        video.getTitle(),
+                        video.getStatus(),
+                        video.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 }

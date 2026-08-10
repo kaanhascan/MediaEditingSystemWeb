@@ -1,13 +1,24 @@
 package com.veyzo.media_editing_system.Controller;
 
+import com.veyzo.media_editing_system.Model.Video;
+import com.veyzo.media_editing_system.Model.VideoStatus;
+import com.veyzo.media_editing_system.Repository.VideoRepository;
 import com.veyzo.media_editing_system.Service.VideoService;
+import com.veyzo.media_editing_system.dto.response.VideoListResponse;
+import com.veyzo.media_editing_system.dto.response.VideoStatusResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -15,16 +26,50 @@ import java.io.IOException;
 public class VideoController {
 
     private final VideoService videoService;
+    private final VideoRepository videoRepository;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity uploadVideo(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title
+            @RequestParam("title") String title,
+            @RequestParam(value = "startTime", defaultValue = "00:00:00") String startTime,
+            @RequestParam(value = "duration", defaultValue = "10") String duration
     ) {
         try {
-            return ResponseEntity.ok(videoService.uploadVideo(file, title));
+            return ResponseEntity.ok(videoService.uploadVideo(file, title, startTime, duration));
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @GetMapping("/{videoId}/status")
+    public ResponseEntity<VideoStatusResponse> getVideoStatus(@PathVariable UUID videoId) {
+        return ResponseEntity.ok(videoService.getVideoStatus(videoId));
+    }
+
+    @GetMapping("/{videoId}/download")
+    public ResponseEntity<Resource> downloadVideo(@PathVariable UUID videoId) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video bulunamadı"));
+
+        if (video.getStatus() != VideoStatus.COMPLETED) {
+            throw new RuntimeException("Video henüz hazır değil.");
+        }
+
+        File file = new File(video.getProcessedFilePath());
+        Resource resource = new FileSystemResource(file);
+
+
+        String downloadName = video.getTitle() + ".mp4";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("video/mp4"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadName + "\"")
+                .body(resource);
+    }
+
+    @GetMapping("/my-videos")
+    public ResponseEntity<List<VideoListResponse>> getMyVideos() {
+        return ResponseEntity.ok(videoService.getUserVideos());
     }
 }
