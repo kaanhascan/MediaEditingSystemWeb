@@ -2,8 +2,12 @@ package com.vidops.media_editing_system.Service;
 
 import com.vidops.media_editing_system.Model.User;
 import com.vidops.media_editing_system.Repository.UserRepository;
+import com.vidops.media_editing_system.dto.request.LoginRequest;
 import com.vidops.media_editing_system.dto.request.RegisterRequest;
+import com.vidops.media_editing_system.dto.response.AuthResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +17,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
 
 
     public User register(RegisterRequest req){
@@ -28,5 +34,16 @@ public class UserService {
                         .password(passwordEncoder.encode(req.password()))
                         .build()
         );
+    }
+
+    public AuthResponse login(LoginRequest req){
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.email(), req.password())
+        );
+        User user = userRepository.findByEmail(req.email())
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
+
+        String jwtToken = jwtService.generateToken(user);
+        return new AuthResponse(jwtToken);
     }
 }

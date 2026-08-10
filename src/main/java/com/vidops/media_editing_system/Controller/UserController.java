@@ -2,17 +2,15 @@ package com.vidops.media_editing_system.Controller;
 
 
 import com.vidops.media_editing_system.Service.UserService;
+import com.vidops.media_editing_system.dto.request.LoginRequest;
 import com.vidops.media_editing_system.dto.request.RegisterRequest;
+import com.vidops.media_editing_system.dto.response.AuthResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
@@ -24,5 +22,16 @@ public class UserController {
         userService.register(req);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
+        return ResponseEntity.ok(userService.login(req));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> success(){
+        return ResponseEntity.ok("Success");
+    }
+
 
 }
