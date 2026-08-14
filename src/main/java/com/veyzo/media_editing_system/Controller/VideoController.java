@@ -49,7 +49,7 @@ public class VideoController {
         return ResponseEntity.ok(videoService.getVideoStatus(videoId));
     }
 
-    @GetMapping("/{videoId}/download")
+    @GetMapping("/download/{videoId}")
     public ResponseEntity<Resource> downloadVideo(@PathVariable UUID videoId) {
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new RuntimeException("Video bulunamadı"));
