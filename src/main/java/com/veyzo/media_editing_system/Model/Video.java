@@ -46,6 +46,9 @@ public class Video {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "batch_id")
+    private String batchId;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
