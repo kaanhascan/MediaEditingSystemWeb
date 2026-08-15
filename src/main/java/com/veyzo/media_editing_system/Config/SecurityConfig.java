@@ -1,5 +1,6 @@
 package com.veyzo.media_editing_system.Config;
 
+import jakarta.servlet.DispatcherType; // YENİ EKLENEN IMPORT
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,15 +32,14 @@ public class SecurityConfig {
                 }))
                 .csrf(csrf -> csrf.disable())
 
-
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+
                         .requestMatchers("/api/users/login", "/api/users/register").permitAll()
                         .anyRequest().authenticated()
                 )
 
-
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
 
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
