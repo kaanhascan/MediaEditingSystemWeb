@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +24,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +38,7 @@ public class VideoService {
 
     private final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/raw/";
 
-    public UploadResponse uploadVideo(MultipartFile file, String title,String startTime,String duration) throws IOException {
+    public UploadResponse uploadVideo(MultipartFile file, String title,String startTime,String duration,String batchId) throws IOException {
 
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
@@ -63,6 +66,7 @@ public class VideoService {
                 .originalFilePath(filePath.toString())
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
+                .batchId(batchId)
                 .build();
 
         Video savedVideo = videoRepository.save(video);
@@ -98,7 +102,8 @@ public class VideoService {
                         video.getId(),
                         video.getTitle(),
                         video.getStatus(),
-                        video.getCreatedAt()
+                        video.getCreatedAt(),
+                        video.getBatchId()
                 ))
                 .collect(Collectors.toList());
     }
@@ -133,5 +138,52 @@ public class VideoService {
             System.err.println("Dosya fiziksel olarak silinirken bir hata ile karşılaşıldı." + e.getMessage());
         }
         videoRepository.delete(video);
+    }
+
+    public List<Video> getVideosForBatch(String batchId, String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        return videoRepository.findByBatchIdAndUser(batchId, currentUser);
+    }
+    public void createZipForVideos(List<Video> videos, OutputStream outputStream) {
+        try (ZipOutputStream zos = new ZipOutputStream(outputStream)) {
+            boolean hasFiles = false;
+
+            for (Video video : videos) {
+                String statusStr = video.getStatus() != null ? String.valueOf(video.getStatus()) : "";
+
+                System.out.println("--- VİDEO İŞLENİYOR: " + video.getTitle() + " ---");
+
+                if (!"COMPLETED".equalsIgnoreCase(statusStr) || video.getProcessedFilePath() == null) {
+                    System.out.println("-> Atlandı: Statü uygun değil.");
+                    continue;
+                }
+
+                Path filePath = Paths.get(video.getProcessedFilePath());
+
+                if (Files.exists(filePath)) {
+                    System.out.println("-> ZIP'e ekleniyor: " + video.getTitle());
+                    ZipEntry zipEntry = new ZipEntry(video.getTitle() + ".mp4");
+                    zos.putNextEntry(zipEntry);
+                    Files.copy(filePath, zos);
+                    zos.closeEntry();
+                    hasFiles = true;
+                } else {
+                    System.out.println("-> Dosya fiziksel olarak bulunamadı: " + filePath.toAbsolutePath());
+                }
+            }
+
+            if (!hasFiles) {
+                ZipEntry errorEntry = new ZipEntry("bilgi.txt");
+                zos.putNextEntry(errorEntry);
+                zos.write("Bu klasördeki videolar henuz islenmemis, basarisiz olmus veya silinmis olabilir.".getBytes());
+                zos.closeEntry();
+            }
+
+        } catch (Exception e) {
+            System.err.println("ZIP oluşturulurken hata: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

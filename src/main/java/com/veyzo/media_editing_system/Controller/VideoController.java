@@ -11,10 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,23 +33,52 @@ public class VideoController {
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity uploadVideo(
+    @PostMapping(value = "/upload")
+    public ResponseEntity<?> uploadVideo(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
-            @RequestParam(value = "startTime", defaultValue = "00:00:00") String startTime,
-            @RequestParam(value = "duration", defaultValue = "10") String duration
+            @RequestParam("startTime") String startTime,
+            @RequestParam("duration") String duration,
+            @RequestParam(value = "batchId", required = false) String batchId
     ) {
         try {
-            return ResponseEntity.ok(videoService.uploadVideo(file, title, startTime, duration));
+            videoService.uploadVideo(file, title, startTime, duration, batchId);
+            return ResponseEntity.ok("Video başarıyla yüklendi");
+
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Dosya yüklenirken bir hata oluştu: " + e.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Beklenmeyen bir hata oluştu: " + e.getMessage());
         }
     }
 
     @GetMapping("/{videoId}/status")
     public ResponseEntity<VideoStatusResponse> getVideoStatus(@PathVariable UUID videoId) {
         return ResponseEntity.ok(videoService.getVideoStatus(videoId));
+    }
+
+    @GetMapping(value = "/download/batch/{batchId}", produces = "application/zip")
+    public ResponseEntity<StreamingResponseBody> downloadBatchAsZip(@PathVariable String batchId) {
+
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+
+        List<Video> videos = videoService.getVideosForBatch(batchId, userEmail);
+
+        StreamingResponseBody stream = outputStream -> {
+            videoService.createZipForVideos(videos, outputStream);
+        };
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"veyzo_klasor_" + batchId + ".zip\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(stream);
     }
 
     @GetMapping("/download/{videoId}")

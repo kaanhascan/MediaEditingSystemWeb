@@ -9,6 +9,7 @@ public record VideoListResponse(
         UUID id,
         String title,
         VideoStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String batchId
 ) {
 }
