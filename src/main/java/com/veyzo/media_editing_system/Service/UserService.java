@@ -5,6 +5,7 @@ import com.veyzo.media_editing_system.Repository.UserRepository;
 import com.veyzo.media_editing_system.dto.request.LoginRequest;
 import com.veyzo.media_editing_system.dto.request.RegisterRequest;
 import com.veyzo.media_editing_system.dto.response.AuthResponse;
+import com.veyzo.media_editing_system.dto.response.UserProfileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,5 +46,17 @@ public class UserService {
 
         String jwtToken = jwtService.generateToken(user);
         return new AuthResponse(jwtToken);
+    }
+
+    public UserProfileDto getMyProfile(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        return new UserProfileDto(
+                user.getUsername(),
+                user.getEmail(),
+                "Pro (Sınırsız)",
+                user.getCreatedAt()
+        );
     }
 }

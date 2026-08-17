@@ -1,13 +1,16 @@
 package com.veyzo.media_editing_system.Controller;
 
 
+import com.veyzo.media_editing_system.Model.User;
 import com.veyzo.media_editing_system.Service.UserService;
 import com.veyzo.media_editing_system.dto.request.LoginRequest;
 import com.veyzo.media_editing_system.dto.request.RegisterRequest;
 import com.veyzo.media_editing_system.dto.response.AuthResponse;
+import com.veyzo.media_editing_system.dto.response.UserProfileDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,6 +39,15 @@ public class UserController {
         catch(Exception e){
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileDto> getMyProfile() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        UserProfileDto profileDto = userService.getMyProfile(email);
+
+        return ResponseEntity.ok(profileDto);
     }
 
 
