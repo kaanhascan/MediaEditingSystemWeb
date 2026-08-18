@@ -186,4 +186,40 @@ public class VideoService {
             e.printStackTrace();
         }
     }
+
+    public void uploadForAudio(MultipartFile file, String title, String batchId) throws IOException {
+        File directory = new File(UPLOAD_DIR);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".mp4";
+        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+        Path filePath = Paths.get(UPLOAD_DIR, uniqueFileName);
+
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        Video video = Video.builder()
+                .title(title)
+                .originalFileName(uniqueFileName)
+                .originalFilePath(filePath.toString())
+                .status(VideoStatus.PENDING)
+                .user(currentUser)
+                .batchId(batchId)
+                .build();
+
+        Video savedVideo = videoRepository.save(video);
+
+
+        ffmpegService.processAudioExtraction(savedVideo.getId());
+    }
+
+
 }

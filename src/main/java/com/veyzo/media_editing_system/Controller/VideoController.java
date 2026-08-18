@@ -31,7 +31,6 @@ public class VideoController {
 
     private final VideoService videoService;
     private final VideoRepository videoRepository;
-    private final UserRepository userRepository;
 
     @PostMapping(value = "/upload")
     public ResponseEntity<?> uploadVideo(
@@ -57,6 +56,28 @@ public class VideoController {
         }
     }
 
+    @PostMapping(value = "/extract-audio")
+    public ResponseEntity<?> extractAudio(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam(value = "batchId", required = false) String batchId
+    ) {
+        try {
+            videoService.uploadForAudio(file, title, batchId);
+            return ResponseEntity.ok("Video başarıyla yüklendi, ses ayırma işlemi başladı");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Dosya yüklenirken bir hata oluştu: " + e.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Beklenmeyen bir hata oluştu: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/{videoId}/status")
     public ResponseEntity<VideoStatusResponse> getVideoStatus(@PathVariable UUID videoId) {
         return ResponseEntity.ok(videoService.getVideoStatus(videoId));
@@ -65,9 +86,7 @@ public class VideoController {
     @GetMapping(value = "/download/batch/{batchId}", produces = "application/zip")
     public ResponseEntity<StreamingResponseBody> downloadBatchAsZip(@PathVariable String batchId) {
 
-
         String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-
 
         List<Video> videos = videoService.getVideosForBatch(batchId, userEmail);
 
@@ -93,11 +112,19 @@ public class VideoController {
         File file = new File(video.getProcessedFilePath());
         Resource resource = new FileSystemResource(file);
 
+        String processedPath = video.getProcessedFilePath();
+        String extension = processedPath != null && processedPath.contains(".")
+                ? processedPath.substring(processedPath.lastIndexOf("."))
+                : ".mp4"; // Fallback
 
-        String downloadName = video.getTitle() + ".mp4";
+        String downloadName = video.getTitle() + extension;
+
+        MediaType mediaType = extension.equalsIgnoreCase(".mp3")
+                ? MediaType.parseMediaType("audio/mpeg")
+                : MediaType.parseMediaType("video/mp4");
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("video/mp4"))
+                .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadName + "\"")
                 .body(resource);
     }
