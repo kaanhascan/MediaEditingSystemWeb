@@ -190,4 +190,52 @@ public class FfmpegService {
             videoRepository.save(mergedVideo);
         }
     }
+
+    @Async
+    public void processGifConversion(UUID videoId) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("GIF için video kaydı bulunamadı"));
+
+        try {
+            video.setStatus(VideoStatus.PROCESSING);
+            videoRepository.save(video);
+
+            File directory = new File(PROCESSED_DIR);
+            if (!directory.exists()) directory.mkdirs();
+
+            String outputFileName = "gif_" + UUID.randomUUID().toString() + ".gif";
+            String outputFilePath = PROCESSED_DIR + outputFileName;
+
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg", "-y",
+                    "-i", video.getOriginalFilePath(),
+                    "-vf", "fps=10,scale=480:-1:flags=lanczos",
+                    outputFilePath
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // System.out.println("[FFMPEG GIF]: " + line);
+            }
+
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0) {
+                video.setStatus(VideoStatus.COMPLETED);
+                video.setProcessedFileName(outputFileName);
+                video.setProcessedFilePath(outputFilePath);
+            } else {
+                video.setStatus(VideoStatus.FAILED);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            video.setStatus(VideoStatus.FAILED);
+        } finally {
+            videoRepository.save(video);
+        }
+    }
 }

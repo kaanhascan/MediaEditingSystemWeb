@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+
+
 @RestController
 @RequestMapping("/api/videos")
 @RequiredArgsConstructor
@@ -117,15 +119,24 @@ public class VideoController {
                 ? processedPath.substring(processedPath.lastIndexOf("."))
                 : ".mp4"; // Fallback
 
-        String downloadName = video.getTitle() + extension;
+        String safeTitle = video.getTitle().replaceAll("[^a-zA-Z0-9.-]", "_");
+        String downloadName = safeTitle + extension;
 
-        MediaType mediaType = extension.equalsIgnoreCase(".mp3")
-                ? MediaType.parseMediaType("audio/mpeg")
-                : MediaType.parseMediaType("video/mp4");
+        MediaType mediaType;
+        if (extension.equalsIgnoreCase(".mp3")) {
+            mediaType = MediaType.parseMediaType("audio/mpeg");
+        } else if (extension.equalsIgnoreCase(".gif")) {
+            mediaType = MediaType.parseMediaType("image/gif");
+        } else if (extension.equalsIgnoreCase(".zip")) {
+            mediaType = MediaType.parseMediaType("application/zip");
+        } else {
+            mediaType = MediaType.parseMediaType("video/mp4");
+        }
 
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadName + "\"")
+                .header("Access-Control-Expose-Headers", "Content-Disposition")
                 .body(resource);
     }
 
@@ -169,6 +180,24 @@ public class VideoController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Birleştirme hatası: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/extract-gif", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> extractGif(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam(value = "batchId", required = false) String batchId
+    ) {
+        try {
+            videoService.uploadForGif(file, title, null);
+            return ResponseEntity.ok("GIF dönüştürme işlemi başarıyla kuyruğa alındı.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("GIF yükleme hatası: " + e.getMessage());
         }
     }
 }

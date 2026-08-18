@@ -10,6 +10,8 @@ public record VideoListResponse(
         String title,
         VideoStatus status,
         LocalDateTime createdAt,
-        String batchId
+        String batchId,
+        String originalFileName,
+        String processedFileName
 ) {
 }

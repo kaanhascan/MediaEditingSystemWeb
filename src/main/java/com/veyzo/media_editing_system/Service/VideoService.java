@@ -104,7 +104,9 @@ public class VideoService {
                         video.getTitle(),
                         video.getStatus(),
                         video.getCreatedAt(),
-                        video.getBatchId()
+                        video.getBatchId(),
+                        video.getOriginalFileName(),
+                        video.getProcessedFileName()
                 ))
                 .collect(Collectors.toList());
     }
@@ -297,6 +299,51 @@ public class VideoService {
         Video savedMergedVideo = videoRepository.save(mergedVideo);
 
         ffmpegService.processVideoMerging(savedMergedVideo.getId(), allVideoIdsToMerge);
+    }
+
+    public void uploadForGif(MultipartFile file, String title, String batchId) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Lütfen geçerli bir dosya yükleyin. Dosya boş olamaz.");
+        }
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("GIF için bir başlık girmelisiniz.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("video/")) {
+            throw new IllegalArgumentException("Sadece video dosyaları GIF'e dönüştürülebilir.");
+        }
+
+        File directory = new File(UPLOAD_DIR);
+        if (!directory.exists()) directory.mkdirs();
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = (originalFilename != null && originalFilename.contains("."))
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".mp4";
+
+        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+        Path filePath = Paths.get(UPLOAD_DIR, uniqueFileName);
+
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        Video video = Video.builder()
+                .title(title.trim())
+                .originalFileName(uniqueFileName)
+                .originalFilePath(filePath.toString())
+                .status(VideoStatus.PENDING)
+                .user(currentUser)
+                .batchId(batchId)
+                .build();
+
+        Video savedVideo = videoRepository.save(video);
+
+        // FFmpeg GIF İşlemini Tetikle
+        ffmpegService.processGifConversion(savedVideo.getId());
     }
 
 
