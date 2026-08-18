@@ -1,7 +1,7 @@
 package com.veyzo.media_editing_system.Controller;
 
 
-import com.veyzo.media_editing_system.Model.User;
+
 import com.veyzo.media_editing_system.Service.UserService;
 import com.veyzo.media_editing_system.dto.request.LoginRequest;
 import com.veyzo.media_editing_system.dto.request.RegisterRequest;

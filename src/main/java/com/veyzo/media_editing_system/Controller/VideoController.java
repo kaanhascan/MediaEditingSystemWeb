@@ -2,7 +2,7 @@ package com.veyzo.media_editing_system.Controller;
 
 import com.veyzo.media_editing_system.Model.Video;
 import com.veyzo.media_editing_system.Model.VideoStatus;
-import com.veyzo.media_editing_system.Repository.UserRepository;
+
 import com.veyzo.media_editing_system.Repository.VideoRepository;
 import com.veyzo.media_editing_system.Service.VideoService;
 import com.veyzo.media_editing_system.dto.response.VideoListResponse;
@@ -21,9 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
