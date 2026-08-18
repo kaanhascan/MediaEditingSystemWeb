@@ -53,7 +53,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
         return new UserProfileDto(
-                user.getUsername(),
+                user.getActualUsername(),
                 user.getEmail(),
                 "Pro (Sınırsız)",
                 user.getCreatedAt()

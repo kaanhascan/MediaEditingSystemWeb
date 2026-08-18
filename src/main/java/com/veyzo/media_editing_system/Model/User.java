@@ -79,4 +79,8 @@ public class User implements UserDetails {
         return true;
     }
 
+    public String getActualUsername(){
+        return this.username;
+    }
+
 }

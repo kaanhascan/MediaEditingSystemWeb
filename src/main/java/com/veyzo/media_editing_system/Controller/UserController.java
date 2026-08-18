@@ -31,16 +31,6 @@ public class UserController {
         return ResponseEntity.ok(userService.login(req));
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<String> success(){
-        try{
-            return ResponseEntity.ok("Success");
-        }
-        catch(Exception e){
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
     @GetMapping("/me")
     public ResponseEntity<UserProfileDto> getMyProfile() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
