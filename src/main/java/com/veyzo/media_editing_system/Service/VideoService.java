@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -219,6 +220,83 @@ public class VideoService {
 
 
         ffmpegService.processAudioExtraction(savedVideo.getId());
+    }
+
+    public void mergeVideos(MultipartFile[] newFiles, List<UUID> existingVideoIds, String title, String batchId) throws IOException {
+
+        int newFilesCount = (newFiles != null) ? newFiles.length : 0;
+        int existingCount = (existingVideoIds != null) ? existingVideoIds.size() : 0;
+
+        if (newFilesCount + existingCount < 2) {
+            throw new IllegalArgumentException("Birleştirme işlemi için en az 2 video (yeni veya mevcut) seçmelisiniz.");
+        }
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Geçerli bir başlık girmelisiniz.");
+        }
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        List<UUID> allVideoIdsToMerge = new ArrayList<>();
+
+        if (existingVideoIds != null && !existingVideoIds.isEmpty()) {
+            List<Video> sourceVideos = videoRepository.findAllById(existingVideoIds);
+            for (Video v : sourceVideos) {
+                if (!v.getUser().getId().equals(currentUser.getId())) {
+                    throw new RuntimeException("Sadece kendi videolarınızı birleştirebilirsiniz!");
+                }
+                if (v.getStatus() != VideoStatus.COMPLETED) {
+                    throw new RuntimeException("Yalnızca işlemi tamamlanmış (COMPLETED) mevcut videolar birleştirilebilir.");
+                }
+                allVideoIdsToMerge.add(v.getId());
+            }
+        }
+
+        if (newFiles != null && newFiles.length > 0) {
+            File directory = new File(UPLOAD_DIR);
+            if (!directory.exists()) directory.mkdirs();
+
+            for (MultipartFile file : newFiles) {
+                if (file.isEmpty()) continue;
+
+                String originalFilename = file.getOriginalFilename();
+                String ext = (originalFilename != null && originalFilename.contains("."))
+                        ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                        : ".mp4";
+                String uniqueFileName = UUID.randomUUID().toString() + ext;
+                Path filePath = Paths.get(UPLOAD_DIR, uniqueFileName);
+
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                Video newVideo = Video.builder()
+                        .title(originalFilename)
+                        .originalFileName(uniqueFileName)
+                        .originalFilePath(filePath.toString())
+                        .processedFileName(uniqueFileName)
+                        .processedFilePath(filePath.toString())
+                        .status(VideoStatus.COMPLETED)
+                        .user(currentUser)
+                        .batchId(batchId)
+                        .build();
+
+                Video savedVideo = videoRepository.save(newVideo);
+                allVideoIdsToMerge.add(savedVideo.getId());
+            }
+        }
+
+        Video mergedVideo = Video.builder()
+                .title(title.trim())
+                .originalFileName("merge_request_" + UUID.randomUUID())
+                .originalFilePath("virtual")
+                .status(VideoStatus.PENDING)
+                .user(currentUser)
+                .batchId(batchId)
+                .build();
+
+        Video savedMergedVideo = videoRepository.save(mergedVideo);
+
+        ffmpegService.processVideoMerging(savedMergedVideo.getId(), allVideoIdsToMerge);
     }
 
 

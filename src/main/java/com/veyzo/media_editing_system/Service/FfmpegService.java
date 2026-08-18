@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -126,6 +127,67 @@ public class FfmpegService {
             video.setStatus(VideoStatus.FAILED);
         } finally {
             videoRepository.save(video);
+        }
+    }
+
+    @Async
+    public void processVideoMerging(UUID mergedVideoId, List<UUID> sourceVideoIds) {
+        Video mergedVideo = videoRepository.findById(mergedVideoId)
+                .orElseThrow(() -> new RuntimeException("Birleştirilecek video kaydı bulunamadı"));
+
+        try {
+            mergedVideo.setStatus(VideoStatus.PROCESSING);
+            videoRepository.save(mergedVideo);
+
+            List<Video> sourceVideos = videoRepository.findAllById(sourceVideoIds);
+
+            File directory = new File(PROCESSED_DIR);
+            if (!directory.exists()) directory.mkdirs();
+
+            String outputFileName = "merged_" + UUID.randomUUID().toString() + ".mp4";
+            String outputFilePath = PROCESSED_DIR + outputFileName;
+
+            File listFile = new File(PROCESSED_DIR + "concat_" + mergedVideo.getId() + ".txt");
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(listFile)) {
+                for (Video v : sourceVideos) {
+                    pw.println("file '" + v.getProcessedFilePath().replace("\\", "/") + "'");
+                }
+            }
+
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg", "-y",
+                    "-f", "concat",
+                    "-safe", "0",
+                    "-i", listFile.getAbsolutePath(),
+                    "-c:v", "libx264",
+                    "-c:a", "aac",
+                    "-preset", "fast",
+                    outputFilePath
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("[FFMPEG]: " + line);
+            }
+            int exitCode = process.waitFor();
+
+            listFile.delete();
+
+            if (exitCode == 0) {
+                mergedVideo.setStatus(VideoStatus.COMPLETED);
+                mergedVideo.setProcessedFileName(outputFileName);
+                mergedVideo.setProcessedFilePath(outputFilePath);
+            } else {
+                mergedVideo.setStatus(VideoStatus.FAILED);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            mergedVideo.setStatus(VideoStatus.FAILED);
+        } finally {
+            videoRepository.save(mergedVideo);
         }
     }
 }

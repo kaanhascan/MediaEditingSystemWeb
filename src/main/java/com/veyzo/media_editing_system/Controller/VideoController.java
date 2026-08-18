@@ -21,7 +21,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -142,6 +144,33 @@ public class VideoController {
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/merge", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> mergeVideos(
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam(value = "existingVideoIds", required = false) List<String> existingVideoIds,
+            @RequestParam("title") String title,
+            @RequestParam(value = "batchId", required = false) String batchId
+    ) {
+        try {
+            List<UUID> uuidList = null;
+            if (existingVideoIds != null && !existingVideoIds.isEmpty()) {
+                uuidList = existingVideoIds.stream()
+                        .map(UUID::fromString)
+                        .toList();
+            }
+
+            videoService.mergeVideos(files, uuidList, title, batchId);
+            return ResponseEntity.ok("Video birleştirme işlemi başarıyla kuyruğa alındı.");
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Birleştirme hatası: " + e.getMessage());
         }
     }
 }
