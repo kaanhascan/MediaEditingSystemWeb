@@ -200,4 +200,21 @@ public class VideoController {
                     .body("GIF yükleme hatası: " + e.getMessage());
         }
     }
+
+    @PostMapping(value = "/compress", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> compressVideo(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title
+    ) {
+        try {
+            videoService.uploadForCompression(file, title);
+            return ResponseEntity.ok("Sıkıştırma işlemi başarıyla kuyruğa alındı.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Video yükleme hatası: " + e.getMessage());
+        }
+    }
 }
