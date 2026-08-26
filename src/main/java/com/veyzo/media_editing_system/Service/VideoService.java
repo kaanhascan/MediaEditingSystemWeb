@@ -122,9 +122,6 @@ public class VideoService {
         String currentUserIdStr = currentUser.getId().toString();
         String videoOwnerIdStr = video.getUser().getId().toString();
 
-        System.out.println("Giriş Yapan (String): " + currentUserIdStr);
-        System.out.println("Videonun Sahibi (String): " + videoOwnerIdStr);
-
         if(!videoOwnerIdStr.equals(currentUserIdStr)) {
             throw new RuntimeException("Bu video başka bir kullancıya ait!");
         }
