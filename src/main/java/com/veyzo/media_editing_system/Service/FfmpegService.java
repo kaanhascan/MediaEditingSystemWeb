@@ -238,4 +238,71 @@ public class FfmpegService {
             videoRepository.save(video);
         }
     }
+
+    @Async
+    public void processVideoCompression(UUID videoId) {
+        Video initialVideo = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Sıkıştırma için video kaydı bulunamadı"));
+
+        initialVideo.setStatus(VideoStatus.PROCESSING);
+        videoRepository.save(initialVideo);
+
+        boolean isSuccess = false;
+        String finalOutputFileName = null;
+        String finalOutputFilePath = null;
+
+        try {
+            File directory = new File(PROCESSED_DIR);
+            if (!directory.exists()) directory.mkdirs();
+
+            String outputFileName = "compressed_" + UUID.randomUUID().toString() + ".mp4";
+            String outputFilePath = PROCESSED_DIR + outputFileName;
+
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg", "-y",
+                    "-i", initialVideo.getOriginalFilePath(),
+                    "-vcodec", "libx264",
+                    "-crf", "28",
+                    "-preset", "fast",
+                    "-c:a", "aac",
+                    "-b:a", "128k",
+                    outputFilePath
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Buffer temizliği...
+            }
+
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0) {
+                isSuccess = true;
+                finalOutputFileName = outputFileName;
+                finalOutputFilePath = outputFilePath;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            java.util.Optional<Video> optionalVideo = videoRepository.findById(videoId);
+
+            if (optionalVideo.isPresent()) {
+                Video latestVideo = optionalVideo.get();
+
+                if (isSuccess) {
+                    latestVideo.setStatus(VideoStatus.COMPLETED);
+                    latestVideo.setProcessedFileName(finalOutputFileName);
+                    latestVideo.setProcessedFilePath(finalOutputFilePath);
+                } else {
+                    latestVideo.setStatus(VideoStatus.FAILED);
+                }
+
+                videoRepository.save(latestVideo);
+            }
+        }
+    }
 }
