@@ -36,7 +36,7 @@ public class UserController {
         jwtCookie.setHttpOnly(true);
         jwtCookie.setSecure(false);
         jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(24 * 60 * 60); // 1 gün
+        jwtCookie.setMaxAge(24 * 60 * 60);
 
         response.addCookie(jwtCookie);
 

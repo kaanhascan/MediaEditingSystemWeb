@@ -104,8 +104,7 @@ public class VideoController {
 
     @GetMapping("/download/{videoId}")
     public ResponseEntity<Resource> downloadVideo(@PathVariable UUID videoId) {
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video bulunamadı"));
+        Video video = videoService.getOwnedVideo(videoId);
 
         if (video.getStatus() != VideoStatus.COMPLETED) {
             throw new RuntimeException("Video henüz hazır değil.");

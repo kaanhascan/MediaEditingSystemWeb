@@ -116,8 +116,7 @@ public class VideoService {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video Bulunamadı"));
+        Video video = getOwnedVideo(videoId);
 
         String currentUserIdStr = currentUser.getId().toString();
         String videoOwnerIdStr = video.getUser().getId().toString();
@@ -374,6 +373,19 @@ public class VideoService {
         Video savedVideo = videoRepository.save(video);
 
         ffmpegService.processVideoCompression(savedVideo.getId());
+    }
+
+    public Video getOwnedVideo(UUID videoId) {
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video bulunamadı."));
+
+        if (!video.getUser().getEmail().equals(currentUserEmail)) {
+            throw new RuntimeException("Güvenlik İhlali: Bu video size ait değil!");
+        }
+
+        return video;
     }
 
 
