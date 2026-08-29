@@ -38,6 +38,9 @@ public class Video {
     @Column(nullable = false)
     private VideoStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private OperationType operationType;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
