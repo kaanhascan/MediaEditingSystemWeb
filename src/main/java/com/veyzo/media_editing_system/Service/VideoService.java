@@ -1,5 +1,6 @@
 package com.veyzo.media_editing_system.Service;
 
+import com.veyzo.media_editing_system.Model.OperationType;
 import com.veyzo.media_editing_system.Model.User;
 import com.veyzo.media_editing_system.Model.Video;
 import com.veyzo.media_editing_system.Model.VideoStatus;
@@ -39,7 +40,7 @@ public class VideoService {
 
     private final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/raw/";
 
-    public UploadResponse uploadVideo(MultipartFile file, String title,String startTime,String duration,String batchId) throws IOException {
+    public UploadResponse uploadVideo(MultipartFile file, String title, String startTime, String duration, String batchId, OperationType operationType) throws IOException {
 
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
@@ -68,6 +69,7 @@ public class VideoService {
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
                 .batchId(batchId)
+                .operationType(operationType)
                 .build();
 
         Video savedVideo = videoRepository.save(video);
@@ -106,7 +108,8 @@ public class VideoService {
                         video.getCreatedAt(),
                         video.getBatchId(),
                         video.getOriginalFileName(),
-                        video.getProcessedFileName()
+                        video.getProcessedFileName(),
+                        video.getOperationType()
                 ))
                 .collect(Collectors.toList());
     }
@@ -186,7 +189,7 @@ public class VideoService {
         }
     }
 
-    public void uploadForAudio(MultipartFile file, String title, String batchId) throws IOException {
+    public void uploadForAudio(MultipartFile file, String title, String batchId,OperationType operationType) throws IOException {
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -212,6 +215,7 @@ public class VideoService {
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
                 .batchId(batchId)
+                .operationType(operationType)
                 .build();
 
         Video savedVideo = videoRepository.save(video);
@@ -220,7 +224,7 @@ public class VideoService {
         ffmpegService.processAudioExtraction(savedVideo.getId());
     }
 
-    public void mergeVideos(MultipartFile[] newFiles, List<UUID> existingVideoIds, String title, String batchId) throws IOException {
+    public void mergeVideos(MultipartFile[] newFiles, List<UUID> existingVideoIds, String title, String batchId,OperationType operationType) throws IOException {
 
         int newFilesCount = (newFiles != null) ? newFiles.length : 0;
         int existingCount = (existingVideoIds != null) ? existingVideoIds.size() : 0;
@@ -276,6 +280,7 @@ public class VideoService {
                         .status(VideoStatus.COMPLETED)
                         .user(currentUser)
                         .batchId(batchId)
+                        .operationType(operationType)
                         .build();
 
                 Video savedVideo = videoRepository.save(newVideo);
@@ -290,6 +295,7 @@ public class VideoService {
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
                 .batchId(batchId)
+                .operationType(operationType)
                 .build();
 
         Video savedMergedVideo = videoRepository.save(mergedVideo);
@@ -297,7 +303,7 @@ public class VideoService {
         ffmpegService.processVideoMerging(savedMergedVideo.getId(), allVideoIdsToMerge);
     }
 
-    public void uploadForGif(MultipartFile file, String title, String batchId) throws IOException {
+    public void uploadForGif(MultipartFile file, String title, String batchId,OperationType operationType) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Lütfen geçerli bir dosya yükleyin. Dosya boş olamaz.");
         }
@@ -334,6 +340,7 @@ public class VideoService {
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
                 .batchId(batchId)
+                .operationType(operationType)
                 .build();
 
         Video savedVideo = videoRepository.save(video);
@@ -341,7 +348,7 @@ public class VideoService {
         ffmpegService.processGifConversion(savedVideo.getId());
     }
 
-    public void uploadForCompression(MultipartFile file, String title) throws IOException {
+    public void uploadForCompression(MultipartFile file, String title,OperationType operationType) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Lütfen geçerli bir dosya yükleyin.");
         }
@@ -368,6 +375,7 @@ public class VideoService {
                 .originalFilePath(filePath.toString())
                 .status(VideoStatus.PENDING)
                 .user(currentUser)
+                .operationType(operationType)
                 .build();
 
         Video savedVideo = videoRepository.save(video);
