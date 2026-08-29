@@ -160,6 +160,7 @@ public class FfmpegService {
                     "-safe", "0",
                     "-i", listFile.getAbsolutePath(),
                     "-c:v", "libx264",
+                    "-threads", "2",
                     "-c:a", "aac",
                     "-preset", "fast",
                     outputFilePath
