@@ -86,8 +86,7 @@ public class VideoService {
     }
 
     public VideoStatusResponse getVideoStatus(UUID videoId) {
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video bulunamadı"));
+        Video video = getOwnedVideo(videoId);
 
         return new VideoStatusResponse(video.getStatus(), video.getProcessedFileName());
     }
