@@ -7,7 +7,7 @@ import java.util.List;
 
 public class FileValidator {
 
-    // Sadece izin verdiğimiz uzantılar
+
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("mp4", "mov");
 
     public static void validateVideoFile(MultipartFile file) {
