@@ -6,6 +6,7 @@ import com.veyzo.media_editing_system.Model.VideoStatus;
 
 import com.veyzo.media_editing_system.Repository.VideoRepository;
 import com.veyzo.media_editing_system.Service.VideoService;
+import com.veyzo.media_editing_system.Util.FileValidator;
 import com.veyzo.media_editing_system.dto.response.VideoListResponse;
 import com.veyzo.media_editing_system.dto.response.VideoStatusResponse;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class VideoController {
             @RequestParam(value = "batchId", required = false) String batchId
     ) {
         try {
+            FileValidator.validateVideoFile(file);
             videoService.uploadVideo(file, title, startTime, duration, batchId, OperationType.TRIM);
             return ResponseEntity.ok("Video başarıyla yüklendi");
 
@@ -66,6 +68,7 @@ public class VideoController {
             @RequestParam(value = "batchId", required = false) String batchId
     ) {
         try {
+            FileValidator.validateVideoFile(file);
             videoService.uploadForAudio(file, title, batchId,OperationType.AUDIO);
             return ResponseEntity.ok("Video başarıyla yüklendi, ses ayırma işlemi başladı");
 
@@ -170,6 +173,11 @@ public class VideoController {
                         .map(UUID::fromString)
                         .toList();
             }
+            if(files != null){
+                for(MultipartFile file : files){
+                    FileValidator.validateVideoFile(file);
+                }
+            }
 
             videoService.mergeVideos(files, uuidList, title, batchId,OperationType.MERGE);
             return ResponseEntity.ok("Video birleştirme işlemi başarıyla kuyruğa alındı.");
@@ -190,6 +198,7 @@ public class VideoController {
             @RequestParam(value = "batchId", required = false) String batchId
     ) {
         try {
+            FileValidator.validateVideoFile(file);
             videoService.uploadForGif(file, title, null,OperationType.GIF);
             return ResponseEntity.ok("GIF dönüştürme işlemi başarıyla kuyruğa alındı.");
         } catch (IllegalArgumentException e) {
@@ -207,6 +216,7 @@ public class VideoController {
             @RequestParam("title") String title
     ) {
         try {
+            FileValidator.validateVideoFile(file);
             videoService.uploadForCompression(file, title,OperationType.COMPRESS);
             return ResponseEntity.ok("Sıkıştırma işlemi başarıyla kuyruğa alındı.");
         } catch (IllegalArgumentException e) {
